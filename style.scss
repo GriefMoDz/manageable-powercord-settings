@@ -1,0 +1,35 @@
+
+.manageableSettings-sidebarHeader {
+  cursor: pointer;
+  border-radius: 3px;
+  opacity: .85;
+  transition: opacity .2s ease;
+
+  &:hover, &:hover .manageableSettings-sortSettingsIcon {
+    opacity: 1;
+    color: var(--interactive-hover);
+    background-color: var(--background-modifier-hover);
+  }
+
+  &~ div[class*='item-'] {
+    display: flex;
+  } 
+}
+
+.manageableSettings-eye {
+  position: relative;
+  top: 1px;
+  margin-right: 4px;
+  width: 16px;
+  height: 16px;
+}
+
+.manageableSettings-settingsInner {
+  flex: 1 1 auto;
+  white-space: normal;
+}
+
+.manageableSettings-iconContainer {
+  opacity: .7;
+  transition: opacity .2s ease;
+}
