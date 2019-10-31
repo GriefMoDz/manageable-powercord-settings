@@ -23,6 +23,7 @@ class ManageablePowercordSettings extends Plugin {
   }
 
   async startPlugin () {
+    this.settings.set('settings', []);
     this.classes = {
       standardSidebarView: (await getModule([ 'standardSidebarView', 'contentColumn' ])).standardSidebarView,
       side: (await getModule([ 'topPill', 'header' ])).side
@@ -38,6 +39,7 @@ class ManageablePowercordSettings extends Plugin {
 
   pluginWillUnload () {
     uninject('manageableSettings-componentDidUpdate');
+    uninject('manageableSettings-componentWillUnmount');
     uninject('manageableSettings-componentDidMount');
     uninject('manageableSettings-renderSidebar');
 
@@ -53,7 +55,7 @@ class ManageablePowercordSettings extends Plugin {
     inject('manageableSettings-componentDidUpdate', SettingsView.prototype, 'componentDidUpdate', (args) => {
       if (args[0].sections.find(sect => sect.section === 'changelog')) {
         if (this.state.sorting) {
-          this.loadSettings(true, false);
+          this.loadSettings(null, false);
         }
 
         this.updateSettings();
@@ -62,10 +64,18 @@ class ManageablePowercordSettings extends Plugin {
       return args;
     });
 
+    inject('manageableSettings-componentWillUnmount', SettingsView.prototype, 'componentWillUnmount', function (_, res) {
+      if (this.props.sections.find(sect => sect.section === 'changelog')) {
+        powercord.api.settings._originalTabs = powercord.api.settings._originalTabs || powercord.api.settings.tabs.map(tab => ({ ...tab }));
+      }
+
+      return res;
+    });
+
     const _this = this;
     inject('manageableSettings-componentDidMount', SettingsView.prototype, 'componentDidMount', function (_, res) {
       if (this.props.sections.find(sect => sect.section === 'changelog')) {
-        _this.loadSettings(true);
+        _this.loadSettings(true, false);
       }
 
       return res;
@@ -96,7 +106,7 @@ class ManageablePowercordSettings extends Plugin {
             this.loadSettings();
           }
 
-          this.saveSettings();
+          // this.saveSettings();
         };
         PowercordHeader.props.className += ' manageableSettings-sidebarHeader';
         PowercordHeader.props.children = React.createElement(Tooltip, {
@@ -141,8 +151,6 @@ class ManageablePowercordSettings extends Plugin {
 
       return res;
     });
-
-    this.forceUpdateSidebar();
   }
 
   getDefaultSettings () {
@@ -157,20 +165,19 @@ class ManageablePowercordSettings extends Plugin {
       }, []);
   }
 
-  getSettings (sorted = false) {
+  getSettings (forceToDefault = false) {
     const defaultSettings = this.getDefaultSettings();
     const alphabeticalOrder = this.settings.get('sortByAlphabetical', false);
 
-    if (sorted) {
+    if (!forceToDefault && this.state.sorting) {
       return [ ...powercord.api.settings._originalTabs ]
-        .filter(tab => !this.showHiddenSettings ? !this.hiddenSettings.includes(tab.section) : tab)
         .sort((a, b) =>
-          this.state.sorting && (alphabeticalOrder ? a.label.localeCompare(b.label) : b.label.localeCompare(a.label))
+          alphabeticalOrder ? a.label.localeCompare(b.label) : b.label.localeCompare(a.label)
         );
     }
 
     return [ ...powercord.api.settings._originalTabs ]
-      .sort((a, b) => defaultSettings[a.section] - defaultSettings[b.section]);
+      .sort((a, b) => defaultSettings.indexOf(a.section) - defaultSettings.indexOf(b.section));
   }
 
   updateSettings () {
@@ -201,7 +208,7 @@ class ManageablePowercordSettings extends Plugin {
   }
 
   restoreSettings (forceShowHidden = false) {
-    powercord.api.settings.tabs = this.getSettings()
+    powercord.api.settings.tabs = this.getSettings(true)
       .filter(tab => !this.showHiddenSettings && !forceShowHidden ? !this.hiddenSettings.includes(tab.section) : tab);
 
     this.forceUpdateSidebar();
@@ -209,11 +216,11 @@ class ManageablePowercordSettings extends Plugin {
 
   loadSettings (persist = false, forceUpdate = true) {
     const settings = this.settings.get('settings', []);
-    powercord.api.settings._originalTabs = powercord.api.settings._originalTabs || powercord.api.settings.tabs.map(tab => ({ ...tab }));
-    powercord.api.settings.tabs = this.getSettings(true)
+    powercord.api.settings._originalTabs = persist ? powercord.api.settings._originalTabs || powercord.api.settings.tabs.map(tab => ({ ...tab })) : powercord.api.settings.tabs.map(tab => ({ ...tab }));
+    powercord.api.settings.tabs = this.getSettings()
       .filter(tab => !this.showHiddenSettings ? !this.hiddenSettings.includes(tab.section) : tab)
       .sort((a, b) =>
-        persist ? settings.indexOf(a.section) - settings.indexOf(b.section) : null
+        persist && settings.includes(a.section) ? settings.indexOf(a.section) - settings.indexOf(b.section) : 1
       );
 
     if (forceUpdate) {
@@ -265,7 +272,7 @@ class ManageablePowercordSettings extends Plugin {
                   this.settings.set('hiddenSettings', this.getDefaultSettings());
                 }
 
-                this.loadSettings();
+                this.loadSettings(true);
               }
             }
             : '', {
@@ -287,7 +294,7 @@ class ManageablePowercordSettings extends Plugin {
               if (!this.state.sorting) {
                 this.restoreSettings();
               } else {
-                this.loadSettings();
+                this.loadSettings(true);
               }
 
               if (!this.showHiddenSettings) {
@@ -296,7 +303,7 @@ class ManageablePowercordSettings extends Plugin {
                 });
               }
 
-              this.saveSettings();
+              // this.saveSettings();
             }
           } ] ]
         })

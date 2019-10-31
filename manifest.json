@@ -1,6 +1,6 @@
 {
   "name": "Manageable Powercord Settings",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Provides some extra functionality over Powercord settings like sorting by (un)alphabetical order, or even hiding tabs alone.",
   "author": "Harley#1051",
   "license": "MIT"
