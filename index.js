@@ -51,6 +51,7 @@ class ManageablePowercordSettings extends Plugin {
   async patchSettingsView () {
     const Flex = await getModuleByDisplayName('Flex');
     const SettingsView = await getModuleByDisplayName('SettingsView');
+    // const TabBar = await getModuleByDisplayName('TabBar');
 
     inject('manageableSettings-componentDidUpdate', SettingsView.prototype, 'componentDidUpdate', (args) => {
       if (args[0].sections.find(sect => sect.section === 'changelog')) {
@@ -128,6 +129,9 @@ class ManageablePowercordSettings extends Plugin {
 
         for (const child of res.props.children) {
           if (powercord.api.settings.tabs.find(tab => tab.section === child.key)) {
+            child.type = require('./components/DragSourceItem');
+            child.props.isDragging = false;
+            child.props.color = this.hiddenSettings.includes(child.key) ? '#f04747' : null;
             child.props.children = [
               this.hiddenSettings.includes(child.key)
                 ? React.createElement(Tooltip, {
@@ -151,6 +155,8 @@ class ManageablePowercordSettings extends Plugin {
 
       return res;
     });
+
+    this.forceUpdateSidebar();
   }
 
   getDefaultSettings () {
@@ -266,10 +272,18 @@ class ManageablePowercordSettings extends Plugin {
               icon: `eye${match ? '' : '-slash'}-duotone`,
               highlight: match ? '#7289da' : '#f04747',
               onClick: () => {
+                const index = powercord.api.settings.tabs.findIndex(tab => tab.section === options.key);
+
                 if (this.hiddenSettings.length === this.getDefaultSettings().length) {
                   this.settings.set('hiddenSettings', []);
                 } else {
                   this.settings.set('hiddenSettings', this.getDefaultSettings());
+                }
+
+                if (!this.showHiddenSettings) {
+                  setImmediate(() => {
+                    this.setUserSettingsSection(index);
+                  });
                 }
 
                 this.loadSettings(true);
