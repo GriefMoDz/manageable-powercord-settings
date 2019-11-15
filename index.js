@@ -87,7 +87,6 @@ class ManageablePowercordSettings extends Plugin {
         child.props.children === 'Powercord');
 
       if (PowercordHeader) {
-        PowercordHeader.props.onContextMenu = this.generateContextMenuCallback('Header', { key: res.props.selectedItem });
         PowercordHeader.props.onClick = () => {
           if (!this.settings.get('acknowledgedNagTooltip', false)) {
             this.settings.set('acknowledgedNagTooltip', true);
@@ -109,7 +108,7 @@ class ManageablePowercordSettings extends Plugin {
 
           // this.saveSettings();
         };
-        PowercordHeader.props.className += ' manageableSettings-sidebarHeader';
+        PowercordHeader.props.className = 'manageableSettings-sidebarHeader';
         PowercordHeader.props.children = React.createElement(Tooltip, {
           text: 'Click to change tabs order',
           position: 'right',
@@ -117,7 +116,10 @@ class ManageablePowercordSettings extends Plugin {
           delay: 5
         }, React.createElement(Flex, {
           justify: Flex.Justify.BETWEEN
-        }, 'Powercord', React.createElement('div', {
+        }, React.createElement('div', {
+          className: 'manageableSettings-sidebarHeaderInner',
+          onContextMenu: this.generateContextMenuCallback('Header', { key: res.props.selectedItem })
+        }, 'Powercord'), React.createElement('div', {
           className: 'manageableSettings-iconContainer'
         }, React.createElement('span', {
           className: `manageableSettings-sortSettingsIcon ${this.getSortIcon()}`
@@ -163,7 +165,7 @@ class ManageablePowercordSettings extends Plugin {
     return powercord.pluginManager.getPlugins()
       .reduce((filtered, id) => {
         const plugin = powercord.pluginManager.plugins.get(id);
-        if (plugin.ready && plugin.registered.settings[0]) {
+        if (plugin.registered.settings[0]) {
           filtered.push(plugin.registered.settings[0]);
         }
 
@@ -214,8 +216,10 @@ class ManageablePowercordSettings extends Plugin {
   }
 
   restoreSettings (forceShowHidden = false) {
-    powercord.api.settings.tabs = this.getSettings(true)
-      .filter(tab => !this.showHiddenSettings && !forceShowHidden ? !this.hiddenSettings.includes(tab.section) : tab);
+    if (powercord.api.settings._originalTabs) {
+      powercord.api.settings.tabs = this.getSettings(true)
+        .filter(tab => !this.showHiddenSettings && !forceShowHidden ? !this.hiddenSettings.includes(tab.section) : tab);
+    }
 
     this.forceUpdateSidebar();
   }

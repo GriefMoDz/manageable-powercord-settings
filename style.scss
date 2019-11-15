@@ -5,6 +5,10 @@
   opacity: .85;
   transition: opacity .2s ease;
 
+  &Inner {
+    width: 100%;
+  }
+
   &:hover, &:hover .manageableSettings-sortSettingsIcon {
     opacity: 1;
     color: var(--interactive-hover);
